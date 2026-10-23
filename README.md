@@ -31,6 +31,10 @@ for (const r of rules) {
 }
 ```
 
+## Reliability
+
+A level is only marked as "already alerted" **after** the message was actually delivered. The Check node attaches the state update to the alert, and the Notify node applies it only once Telegram/Discord accepted the message. If a send fails (network error, bad token, Telegram down), the error is shown in the Notify output and the alert is retried on the next scheduled run instead of staying silent until price crosses back. Thanks to u/Full-SpoonFood for reporting this.
+
 ## Setup (about 5 minutes)
 
 1. Download [`workflows/crypto-price-level-alerts.json`](workflows/crypto-price-level-alerts.json). In n8n, go to **Workflows → Import from File**.
