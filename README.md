@@ -52,6 +52,7 @@ Tested on n8n 1.x. The JSON contains no credentials.
 ## Write-up
 
 The full logic, line by line: **[Building crypto price-level alerts in n8n that fire once and re-arm](https://cryptoflows.hashnode.dev/building-crypto-price-level-alerts-in-n8n-that-fire-once-and-re-arm)**
+
 ## License
 
 MIT
