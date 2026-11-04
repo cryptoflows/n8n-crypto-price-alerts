@@ -6,6 +6,12 @@ A free n8n workflow that checks crypto prices every minute and sends **one** Tel
 - No n8n credentials needed. Telegram/Discord settings live in one `Config` node.
 - Dry-run by default: if you leave the tokens empty, the workflow returns the messages instead of sending them.
 
+## Who runs this
+WalletWatcher Alerts (@WalletWatcherAlertsBot), the Whale Moves feed (@whalemovesalert) and this repo are published by **iMonitoring** (internetmonitoring.nl), Lelystad, the Netherlands.
+Contact: info@internetmonitoring.nl
+
+**WalletWatcher Pro:** follow up to 20 wallets for €6 a month, paid inside the bot. On the free plan, each friend you invite with /invite adds 3 extra wallets.
+
 ## How it works
 
 `Schedule (every minute) / Run manually → Config → Check → Notify`
