@@ -26,9 +26,12 @@ state.fired = state.fired || {};
 for (const r of rules) {
   const p = px[r.sym];
   const hit = r.op === '>' ? p > r.lvl : p < r.lvl;
-  if (hit && !state.fired[r.key]) { state.fired[r.key] = true; out.push(/* alert */); } // fire once
-  if (!hit) state.fired[r.key] = false;                                                  // re-arm
+  // fire once: NOT marked here. The alert carries a `commit`; Notify applies it
+  // only after Telegram/Discord accepted the message, so a failed send retries next run.
+  if (hit && !state.fired[r.key]) out.push({ json: { text, commit: [{ path: ['fired', r.key], value: true }] } });
+  if (!hit) state.fired[r.key] = false; // re-arm
 }
+// Notify, per alert: send → on success apply(commit); on error report it and leave fired unset
 ```
 
 ## Reliability
