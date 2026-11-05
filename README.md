@@ -12,6 +12,16 @@ Contact: info@internetmonitoring.nl
 
 **WalletWatcher Pro:** follow up to 20 wallets for €6 a month, paid inside the bot. On the free plan, each friend you invite with /invite adds 3 extra wallets.
 
+## WalletWatcher Pro: USD alerts + n8n webhook
+Wallet move alerts in Telegram with the **$ value** of each transfer. Set a **$ threshold** with `/min 5000` so you only hear about moves above $5k. Pro can also POST every alert to your own n8n (or any) webhook with a `usd` field, via `/webhook <url>`.
+
+**€6, one payment for 30 days of Pro.** It doesn't renew automatically. If it isn't working for you within 14 days of payment, you get a full refund.
+
+1. [Buy on Gumroad](https://pjamour.gumroad.com/l/qxyjv). Your license key is in the receipt.
+2. Open [@WalletWatcherAlertsBot](https://t.me/WalletWatcherAlertsBot?start=readme) and send `/activate <your license key>`.
+
+Alerts only. No trading, no signals, no advice.
+
 ## How it works
 
 `Schedule (every minute) / Run manually → Config → Check → Notify`
