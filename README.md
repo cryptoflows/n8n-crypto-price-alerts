@@ -1,6 +1,6 @@
 # n8n crypto price-level alerts (fire once, re-arm)
 
-A free n8n workflow that checks crypto prices every minute and sends **one** Telegram and/or Discord message when a price level is crossed. It does not send the same alert again on every run. After an alert, the level re-arms once price has stayed on the safe side for two scheduled runs, so the next crossing alerts again.
+A free n8n workflow that checks crypto prices every minute and sends **one** Telegram and/or Discord message when a price level is crossed. It does not send the same alert again on every run. After an alert, the level re-arms once price has stayed on the safe side and outside a percent-of-level band (default 0.1%) for two consecutive scheduled runs, so the next crossing alerts again.
 
 - No exchange API keys. Prices come from Binance's public market-data host `data-api.binance.vision`, which also works in regions where binance.com is blocked.
 - No n8n credentials needed. Telegram/Discord settings live in one `Config` node.
@@ -30,39 +30,37 @@ Alerts only. No trading, no signals, no advice.
 |---|---|---|
 | Schedule | Schedule Trigger | Cron `* * * * *` |
 | Run manually | Manual Trigger | For testing in the editor |
-| Config | Set | Telegram/Discord settings and the list of levels |
-| Check | Code | Fetches prices, evaluates rules, keeps state |
+| Config | Set | Telegram/Discord settings, levels, max price age and re-arm band |
+| Check | Code | Fetches timestamped prices, aborts stale/failed data, evaluates rules, keeps state |
 | Notify | Code | Sends each alert to Telegram and/or Discord |
 
-The core of `Check`:
+The core of `Check`: one public `GET /api/v3/ticker/24hr?symbols=...` request supplies `lastPrice` and `closeTime` (milliseconds) for all configured symbols. The old `ticker/price` endpoint has no timestamp. Before evaluating **any** rule, Check verifies every used symbol has a valid price/time and is no older than `maxPriceAgeSec` (default 180). A failed/timed-out request or missing/stale data returns a visible `error` item in Check, not “No level crossed”; no alerts or state writes occur.
 
 ```js
-const state = $getWorkflowStaticData('global'); // persists between active (scheduled) runs
-// state.fired[key]: true = alerted (latched), false = armed, absent = never seen
-// state.safeRuns[key]: consecutive scheduled runs on the safe side while latched
-for (const r of rules) {
-  const p = px[r.sym];
-  const hit = r.op === '>' ? p > r.lvl : p < r.lvl;
-  if (!(r.key in state.fired)) { state.fired[r.key] = hit; state.safeRuns[r.key] = 0; continue; } // cold-start seed: no alert
-  if (state.fired[r.key]) { // latched: re-arm only after 2 safe runs in a row
-    if (hit) state.safeRuns[r.key] = 0;
-    else if (++state.safeRuns[r.key] >= 2) { state.fired[r.key] = false; state.safeRuns[r.key] = 0; }
-    continue;
-  }
-  // armed + hit: alert. NOT marked here. The alert carries a `commit` (fired=true, safeRuns=0);
-  // Notify applies it only after Telegram/Discord accepted the message, so a failed send retries next run.
-  if (hit) out.push({ json: { text, commit: [{ path: ['fired', r.key], value: true }, { path: ['safeRuns', r.key], value: 0 }] } });
-}
-// Notify, per alert: send → on success apply(commit); on error report it and leave fired unset
+// Simplified state transitions after all prices pass freshness validation:
+const hit = r.op === '>' ? p > r.lvl : p < r.lvl;
+const distance = r.op === '>' ? r.lvl - p : p - r.lvl;
+const safe = !hit && distance >= r.lvl * (rearmBandPct / 100);
+// unseen key: seed fired=hit, safeRuns=0; no alert
+// latched + !safe (including inside band): safeRuns=0; stay latched
+// latched + safe: increment streak; at 2 clear fired and reset streak
+// armed + hit: emit alert with commit [fired=true, safeRuns=0]
+// Notify applies that commit only after successful delivery / dry-run
 ```
+
+`decide()` is pure: it returns alerts and a copy of quiet-path state. Check persists the quiet updates per level; Notify applies alert commits only after delivery.
 
 ## Reliability
 
 A level is only marked as "already alerted" **after** the message was actually delivered. The Check node attaches the state update to the alert, and the Notify node applies it only once Telegram/Discord accepted the message. If a send fails (network error, bad token, Telegram down), the error is shown in the Notify output and the alert is retried on the next scheduled run instead of staying silent until price crosses back. Thanks to u/Full-SpoonFood for reporting this.
 
-**Fresh imports don't fire instantly.** A duplicated or freshly imported workflow starts with empty state. On a level's first run, if price is already past it, the level is seeded as already alerted and no message is sent; if price is on the safe side, it is seeded as armed. Thanks to u/vlotstroom for this one.
+**Fresh imports don't fire instantly.** A duplicated or freshly imported workflow starts with empty state. On a level's first run, if price is already past it, the level is seeded as already alerted and no message is sent; if price is on the safe side, it is seeded as armed. Thanks to u/vlotstroom for the cold-start seed and percent-band suggestions.
 
-**Re-arm needs two runs on the safe side.** After an alert, the level stays latched until price has been on the safe side for two scheduled runs in a row. One noisy print back across can't re-arm it and fire again a minute later, while a held retrace still releases the latch. The safe-run streak is stored next to the fired flag; on the alert path both are written only after a successful send, so a failed send still retries next run. Thanks to u/Fit-Corner2382 for suggesting this.
+**Re-arm needs depth AND two runs.** After an alert, price must be on the safe side and at least `level * (rearmBandPct / 100)` away for two consecutive scheduled runs. Default `rearmBandPct` is **0.1** (0.1%): for `BTCUSDT>100000`, a price at or below 99900 qualifies; for `ETHUSDT<4000`, at or above 4004 qualifies. A hit or a safe-side price inside the band resets the streak to zero. Set the band to 0 to disable the depth requirement, not the two-run timing. Thanks to u/Fit-Corner2382 (duration) and u/vlotstroom (depth). Quiet seed/streak/reset/re-arm writes happen in Check per level, independently of another level's failed send. Alert commits still wait for successful delivery / dry-run.
+
+**Stale data is an error, not silence.** `maxPriceAgeSec` defaults to **180** seconds. Missing/invalid `lastPrice` or `closeTime`, any used symbol older than the limit, or an HTTP failure/20-second timeout aborts the whole run before seeding, alerting or changing `fired`/`safeRuns`. Inspect the visible Check error (symbol, age and limit for bad data); Notify may have no output when there is no alert. Thanks to u/AICompanionz for the stale-data check.
+
+**Tune the band offline, not in the minute run.** Following u/vlotstroom's method, pull a few weeks of 1-minute klines for the pair from `data-api.binance.vision`, count re-crosses at different `rearmBandPct` values, and pick the smallest band that kills most churn. The band filters slow chop; two consecutive runs filter one-minute wicks. This workflow does not fetch klines or run a live calibrator.
 
 ## Setup (about 5 minutes)
 
@@ -74,7 +72,14 @@ A level is only marked as "already alerted" **after** the message was actually d
 
 > **Gotcha:** n8n only saves workflow static data on production (active) executions, not on manual test runs. In the editor every manual run starts with empty state, so a manual run only seeds levels (a level that is already past is treated as alerted and stays silent). That's expected. To see real alerts, test on the active workflow.
 
-Note: after an alert, the workflow re-arms once price has been back on the other side of the exact level for two scheduled runs in a row (two minutes on the default schedule). There is no buffer band. If price chops slowly around a level, you can add a percent band in the latched `!hit` branch, for example only count a run as safe when price is 1% away.
+**Additional Config fields** (numeric assignments in the existing Config node):
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `maxPriceAgeSec` | number | `180` | Maximum age in seconds of each used symbol's `closeTime`; missing/NaN setting falls back to 180. |
+| `rearmBandPct` | number | `0.1` | Percent of the level required on the safe side for each of the two re-arm runs; 0 disables depth only. Missing/NaN setting falls back to 0.1. |
+
+Changing a level string creates a new state key; its next fresh observation seeds silently rather than alerting. Failed/stale data never seeds a new key.
 
 Tested on n8n 1.x. The JSON contains no credentials.
 
