@@ -95,6 +95,6 @@ MIT
 
 ### More from me (paid / optional, clearly labelled)
 
-- **Crypto alerts pack for n8n** v1.4 (10 workflows: listings, funding extremes, liquidations, BTC whale transfers, portfolio digest, DCA, market movers, EVM wallet watch incl. ERC-20 + exchange labels, Solana SOL+SPL wallet alerts, and this one): https://pjamour.gumroad.com/l/sfkvkp
+- **Crypto alerts pack for n8n** v1.7.1 (11 workflows: listings, funding extremes, liquidations, BTC whale transfers, portfolio digest, DCA, market movers, EVM wallet watch incl. ERC-20 + exchange labels, Solana SOL+SPL wallet alerts, BTC address watcher, and this one): https://pjamour.gumroad.com/l/sfkvkp
 - **@WalletWatcherAlertsBot** on Telegram: alerts when a wallet you watch sends or receives funds. Free for 1 wallet, Pro €6/month. https://t.me/WalletWatcherAlertsBot
 - Free public whale-move feed: https://t.me/whalemovesalert
