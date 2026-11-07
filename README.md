@@ -10,7 +10,7 @@ A free n8n workflow that checks crypto prices every minute and sends **one** Tel
 WalletWatcher Alerts (@WalletWatcherAlertsBot), the Whale Moves feed (@whalemovesalert) and this repo are published by **iMonitoring** (internetmonitoring.nl), Lelystad, the Netherlands.
 Contact: info@internetmonitoring.nl
 
-**WalletWatcher Pro:** follow up to 20 wallets for €6 a month, paid inside the bot. On the free plan, each friend you invite with /invite adds 3 extra wallets.
+**WalletWatcher Pro:** follow up to 20 wallets for €6, one payment for 30 days, then /activate. On the free plan, each friend you invite with /invite adds 3 extra wallets.
 
 ## WalletWatcher Pro: USD alerts + n8n webhook
 Wallet move alerts in Telegram with the **$ value** of each transfer. Set a **$ threshold** with `/min 5000` so you only hear about moves above $5k. Pro can also POST every alert to your own n8n (or any) webhook with a `usd` field, via `/webhook <url>`.
@@ -96,5 +96,5 @@ MIT
 ### More from me (paid / optional, clearly labelled)
 
 - **Crypto alerts pack for n8n** v1.7.1 (11 workflows: listings, funding extremes, liquidations, BTC whale transfers, portfolio digest, DCA, market movers, EVM wallet watch incl. ERC-20 + exchange labels, Solana SOL+SPL wallet alerts, BTC address watcher, and this one): https://pjamour.gumroad.com/l/sfkvkp
-- **@WalletWatcherAlertsBot** on Telegram: alerts when a wallet you watch sends or receives funds. Free for 1 wallet, Pro €6/month. https://t.me/WalletWatcherAlertsBot
+- **@WalletWatcherAlertsBot** on Telegram: alerts when a wallet you watch sends or receives funds. Free for 1 wallet, Pro €6, one payment for 30 days, then /activate. https://t.me/WalletWatcherAlertsBot
 - Free public whale-move feed: https://t.me/whalemovesalert
